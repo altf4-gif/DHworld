@@ -16,12 +16,12 @@ import java.util.Random;
 import java.util.Set;
 
 /**
- * Мини-игра MrH: только плита и ходячие 3D-модели из ../MrH.
+ * Мини-игра MrH: плита + ходячие 3D-модели.
  * WASD+мышь — полёт, Space/Shift — вверх/вниз,
- * 1..9,0 / TAB — выбор модели, E или ЛКМ — спавн, R — убрать всех, ESC — выход.
+ * Q — меню спавна, E/ЛКМ — спавн выбранной, 1..9,0/TAB — выбор,
+ * R — убрать всех, F11 — фуллскрин/окно, ESC — выход.
  */
 public final class Main {
-    private static final String MODELS_DIR = "../MrH";
     private static final float HEIGHT = 1.8f;
     private static final float EDGE = Ground.SIZE / 2f - 1f;
 
@@ -36,15 +36,18 @@ public final class Main {
     private final Random rng = new Random();
     private int selected = 0;
     private boolean lmbHeld = false;
+    private Menu menu;
 
     public static void main(String[] args) { new Main().run(); }
 
     private void run() {
-        scan(new File(MODELS_DIR));
-        System.out.println("[MrH] Модели (клавиши 1..9,0, дальше TAB):");
+        // игра может лежать и в корне DHworld, и в подпапке — ищем MrH рядом
+        File modelsDir = new File("MrH");
+        if (!modelsDir.isDirectory()) modelsDir = new File("../MrH");
+        scan(modelsDir);
+        System.out.println("[MrH] Модели из " + modelsDir.getPath() + ":");
         for (int i = 0; i < objs.size(); i++)
-            System.out.println("  " + (i + 1) + ") " + objs.get(i).getParentFile().getName()
-                    + "/" + objs.get(i).getName());
+            System.out.println("  " + (i + 1) + ") " + objs.get(i).getName());
 
         Window window = new Window(1280, 720, "MrH");
         window.setCursorDisabled(true);
@@ -52,6 +55,13 @@ public final class Main {
         Ground ground = new Ground();
         Texture noShadow = new Texture(1, 1, new int[]{0xFFFFFFFF}, false);
         GL11.glEnable(GL11.GL_DEPTH_TEST);
+
+        List<String> names = new ArrayList<>();
+        for (File f : objs) {
+            String n = f.getName();
+            names.add(n.substring(0, n.length() - 4)); // без ".obj"
+        }
+        menu = new Menu(names); // после окна: TextRenderer создаёт GL-текстуры
 
         Matrix4f lightVP = new Matrix4f();
         Vector3f sunDir   = new Vector3f(0.4f, 0.8f, 0.3f).normalize();
@@ -66,11 +76,13 @@ public final class Main {
             last = System.nanoTime();
 
             window.pollEvents();
-            if (window.isKeyPressed(GLFW.GLFW_KEY_ESCAPE))
-                GLFW.glfwSetWindowShouldClose(window.handle(), true);
+            if (tap(window, GLFW.GLFW_KEY_ESCAPE)) {
+                if (menu.isOpen()) { menu.close(window); camera.resetMouseLook(); }
+                else GLFW.glfwSetWindowShouldClose(window.handle(), true);
+            }
 
             camera.setAspect(window.aspectRatio());
-            camera.update(window, dt);
+            if (!menu.isOpen()) camera.update(window, dt); // в меню камера замерзает
             input(window, camera);
 
             for (int i = npcs.size() - 1; i >= 0; i--) {
@@ -91,16 +103,38 @@ public final class Main {
             for (Npc n : npcs)
                 n.model.render(camera.view(), camera.projection(), lightVP, noShadow.getId(),
                         sunDir, sunColor, ambient, camera.position(), sky, 0f);
+            menu.render(window);
             window.swapBuffers();
         }
 
         for (Npc n : npcs) n.model.destroy();
+        menu.destroy();
         ground.destroy();
         noShadow.destroy();
         window.destroy();
     }
 
     private void input(Window w, Camera cam) {
+        if (tap(w, GLFW.GLFW_KEY_F11)) w.toggleFullscreen();
+        if (tap(w, GLFW.GLFW_KEY_Q)) {
+            menu.toggle(w);
+            if (!menu.isOpen()) cam.resetMouseLook();
+        }
+
+        boolean lmb = w.isMouseButtonPressed(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+        boolean click = lmb && !lmbHeld;
+        lmbHeld = lmb;
+
+        if (menu.isOpen()) {
+            if (click && menu.hover() >= 0) {
+                selected = menu.hover();
+                spawn(cam);
+                title(w);
+            }
+            if (tap(w, GLFW.GLFW_KEY_R)) { clearAll(); title(w); }
+            return;
+        }
+
         for (int i = 0; i < Math.min(10, objs.size()); i++) {
             int key = (i == 9) ? GLFW.GLFW_KEY_0 : GLFW.GLFW_KEY_1 + i;
             if (tap(w, key)) { selected = i; title(w); }
@@ -108,13 +142,13 @@ public final class Main {
         if (!objs.isEmpty() && tap(w, GLFW.GLFW_KEY_TAB)) {
             selected = (selected + 1) % objs.size(); title(w);
         }
-        boolean lmb = w.isMouseButtonPressed(GLFW.GLFW_MOUSE_BUTTON_LEFT);
-        if (tap(w, GLFW.GLFW_KEY_E) || (lmb && !lmbHeld)) { spawn(cam); title(w); }
-        lmbHeld = lmb;
-        if (tap(w, GLFW.GLFW_KEY_R)) {
-            for (Npc n : npcs) n.model.destroy();
-            npcs.clear(); title(w);
-        }
+        if (tap(w, GLFW.GLFW_KEY_E) || click) { spawn(cam); title(w); }
+        if (tap(w, GLFW.GLFW_KEY_R)) { clearAll(); title(w); }
+    }
+
+    private void clearAll() {
+        for (Npc n : npcs) n.model.destroy();
+        npcs.clear();
     }
 
     private RiggedModel create(int idx, float x, float z) {
@@ -138,10 +172,10 @@ public final class Main {
     }
 
     private void title(Window w) {
-        String cur = objs.isEmpty() ? "нет .obj в ../MrH"
+        String cur = objs.isEmpty() ? "нет .obj в MrH"
                 : (selected + 1) + "/" + objs.size() + " " + objs.get(selected).getName();
         GLFW.glfwSetWindowTitle(w.handle(),
-                "MrH | " + cur + " | людей: " + npcs.size() + " | E/ЛКМ спавн, R очистить, ESC выход");
+                "MrH | " + cur + " | людей: " + npcs.size() + " | Q меню, E/ЛКМ спавн, R очистить, F11 экран, ESC выход");
     }
 
     private void scan(File dir) {

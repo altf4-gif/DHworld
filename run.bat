@@ -8,15 +8,13 @@ if not exist "out\com\example\engine\Main.class" (
     exit /b 1
 )
 
-REM ---------- locate DHsim-main\lib (same auto-detect as build.bat) ----------
 set "DHROOT="
-if exist "..\DHsim-main\lib\lwjgl-3.4.3.jar" set "DHROOT=.."
-if not defined DHROOT if exist ".\DHsim-main\lib\lwjgl-3.4.3.jar" set "DHROOT=."
+if exist ".\DHsim-main\lib\lwjgl-3.4.3.jar" set "DHROOT=."
+if not defined DHROOT if exist "..\DHsim-main\lib\lwjgl-3.4.3.jar" set "DHROOT=.."
 if not defined DHROOT if exist "..\..\DHsim-main\lib\lwjgl-3.4.3.jar" set "DHROOT=..\.."
 
 if not defined DHROOT (
-    echo [ERROR] Cannot find DHsim-main\lib.
-    echo         Run build.bat first, or put MrHgame next to DHsim-main.
+    echo [ERROR] Cannot find DHsim-main\lib. Run build.bat first.
     pause
     exit /b 1
 )

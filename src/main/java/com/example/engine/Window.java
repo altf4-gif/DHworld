@@ -11,21 +11,19 @@ import java.nio.DoubleBuffer;
 import java.nio.IntBuffer;
 
 /**
- * Creates and owns a fullscreen GLFW window with an OpenGL 3.3 core context.
- *
- * The window goes fullscreen on the primary monitor at its native resolution
- * right after creation. width()/height() report the live framebuffer size, so
- * everything (camera projection, UI ortho, spawn-menu hit tests) adapts to the
- * actual resolution automatically.
+ * Окно игры. Фуллскрин БЕЗРАМОЧНЫЙ: окно размером с монитор без рамки,
+ * видеорежим НЕ переключается — alt-tab и сворачивание ничего не ломают.
+ * F11 — переключение фуллскрин <-> окно. API совместим со старым Window.
  */
 public final class Window {
     private final long handle;
+    private final int windowedW, windowedH;
+    private boolean fullscreen;
 
     public Window(int fallbackWidth, int fallbackHeight, String title) {
-        this.handle = createHandle(fallbackWidth, fallbackHeight, title);
-    }
+        this.windowedW = fallbackWidth;
+        this.windowedH = fallbackHeight;
 
-    private static long createHandle(int width, int height, String title) {
         GLFWErrorCallback.createPrint(System.err).set();
         if (!GLFW.glfwInit()) {
             throw new IllegalStateException("Unable to initialize GLFW");
@@ -39,34 +37,45 @@ public final class Window {
         GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_PROFILE, GLFW.GLFW_OPENGL_CORE_PROFILE);
         GLFW.glfwWindowHint(GLFW.GLFW_OPENGL_FORWARD_COMPAT, GLFW.GLFW_TRUE);
 
-        long handle = GLFW.glfwCreateWindow(width, height, title, MemoryUtil.NULL, MemoryUtil.NULL);
+        long monitor = GLFW.glfwGetPrimaryMonitor();
+        GLFWVidMode mode = monitor != 0 ? GLFW.glfwGetVideoMode(monitor) : null;
+        int w = mode != null ? mode.width() : fallbackWidth;
+        int h = mode != null ? mode.height() : fallbackHeight;
+        fullscreen = mode != null;
+
+        GLFW.glfwWindowHint(GLFW.GLFW_DECORATED, fullscreen ? GLFW.GLFW_FALSE : GLFW.GLFW_TRUE);
+        handle = GLFW.glfwCreateWindow(w, h, title, MemoryUtil.NULL, MemoryUtil.NULL);
         if (handle == MemoryUtil.NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
         }
 
+        GLFW.glfwSetWindowPos(handle, 0, 0);
         GLFW.glfwMakeContextCurrent(handle);
         GLFW.glfwSwapInterval(1);
-
-        // ---- Fullscreen on the primary monitor ----
-        long primary = GLFW.glfwGetPrimaryMonitor();
-        if (primary != 0) {
-            GLFWVidMode mode = GLFW.glfwGetVideoMode(primary);
-            if (mode != null) {
-                GLFW.glfwSetWindowMonitor(handle, primary, 0, 0,
-                        mode.width(), mode.height(), mode.refreshRate());
-            }
-        }
-
         GLFW.glfwShowWindow(handle);
         GL.createCapabilities();
-        return handle;
     }
 
-    public long handle() {
-        return handle;
+    /** F11: безрамочный фуллскрин <-> обычное окно по центру. */
+    public void toggleFullscreen() {
+        long monitor = GLFW.glfwGetPrimaryMonitor();
+        GLFWVidMode mode = monitor != 0 ? GLFW.glfwGetVideoMode(monitor) : null;
+        if (mode == null) return;
+        fullscreen = !fullscreen;
+        if (fullscreen) {
+            GLFW.glfwSetWindowAttrib(handle, GLFW.GLFW_DECORATED, GLFW.GLFW_FALSE);
+            GLFW.glfwSetWindowPos(handle, 0, 0);
+            GLFW.glfwSetWindowSize(handle, mode.width(), mode.height());
+        } else {
+            GLFW.glfwSetWindowAttrib(handle, GLFW.GLFW_DECORATED, GLFW.GLFW_TRUE);
+            GLFW.glfwSetWindowSize(handle, windowedW, windowedH);
+            GLFW.glfwSetWindowPos(handle,
+                    (mode.width() - windowedW) / 2, (mode.height() - windowedH) / 2);
+        }
     }
 
-    /** Live framebuffer width in pixels (changes when switching to fullscreen). */
+    public long handle() { return handle; }
+
     public int width() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer w = stack.mallocInt(1);
@@ -76,7 +85,6 @@ public final class Window {
         }
     }
 
-    /** Live framebuffer height in pixels. */
     public int height() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer w = stack.mallocInt(1);
@@ -92,9 +100,7 @@ public final class Window {
         return h == 0 ? 1f : (float) w / (float) h;
     }
 
-    public boolean shouldClose() {
-        return GLFW.glfwWindowShouldClose(handle);
-    }
+    public boolean shouldClose() { return GLFW.glfwWindowShouldClose(handle); }
 
     public boolean isKeyPressed(int key) {
         return GLFW.glfwGetKey(handle, key) == GLFW.GLFW_PRESS;
@@ -104,28 +110,19 @@ public final class Window {
         return GLFW.glfwGetMouseButton(handle, button) == GLFW.GLFW_PRESS;
     }
 
-    /**
-     * Cursor position scaled to framebuffer pixels, origin at the top-left.
-     * This matches what {@link #width()} / {@link #height()} report, so 2D UI
-     * hit tests line up even on high-DPI displays.
-     */
     public double[] cursorPos() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             DoubleBuffer x = stack.mallocDouble(1);
             DoubleBuffer y = stack.mallocDouble(1);
             GLFW.glfwGetCursorPos(handle, x, y);
-
             IntBuffer ww = stack.mallocInt(1);
             IntBuffer wh = stack.mallocInt(1);
             GLFW.glfwGetWindowSize(handle, ww, wh);
-
             IntBuffer fw = stack.mallocInt(1);
             IntBuffer fh = stack.mallocInt(1);
             GLFW.glfwGetFramebufferSize(handle, fw, fh);
-
             double sx = ww.get(0) > 0 ? (double) fw.get(0) / ww.get(0) : 1.0;
             double sy = wh.get(0) > 0 ? (double) fh.get(0) / wh.get(0) : 1.0;
-
             return new double[]{ x.get(0) * sx, y.get(0) * sy };
         }
     }
@@ -135,20 +132,13 @@ public final class Window {
                 disabled ? GLFW.GLFW_CURSOR_DISABLED : GLFW.GLFW_CURSOR_NORMAL);
     }
 
-    public void pollEvents() {
-        GLFW.glfwPollEvents();
-    }
-
-    public void swapBuffers() {
-        GLFW.glfwSwapBuffers(handle);
-    }
+    public void pollEvents() { GLFW.glfwPollEvents(); }
+    public void swapBuffers() { GLFW.glfwSwapBuffers(handle); }
 
     public void destroy() {
         GLFW.glfwDestroyWindow(handle);
         GLFW.glfwTerminate();
         GLFWErrorCallback cb = GLFW.glfwSetErrorCallback(null);
-        if (cb != null) {
-            cb.free();
-        }
+        if (cb != null) cb.free();
     }
 }
