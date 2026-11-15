@@ -1,0 +1,3 @@
+woman=berem
+man=normis
+fire=man

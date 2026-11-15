@@ -1,0 +1,4 @@
+unlocked=1
+stars0=0
+stars1=0
+stars2=0
