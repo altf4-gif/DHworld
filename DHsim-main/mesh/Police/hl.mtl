@@ -1,0 +1,28 @@
+newmtl Breadloafgeom1Mtl
+Material Color
+Ka 0.373615 0.368591 0.383775
+Kd 0.373615 0.368591 0.383775
+Ks 0.0234425 0.0231273 0.02408 
+
+d 1
+
+Ns 0
+
+map_Ka Breadloafgeom1_diff.png
+map_Kd Breadloafgeom1_diff.png
+map_d Breadloafgeom1_diff.png
+
+newmtl Bootgeom1Mtl
+Material Color
+Ka 0.373615 0.368591 0.383775
+Kd 0.373615 0.368591 0.383775
+Ks 0.0234425 0.0231273 0.02408 
+
+d 1
+
+Ns 0
+
+map_Ka Bootgeom1_diff.png
+map_Kd Bootgeom1_diff.png
+map_d Bootgeom1_diff.png
+

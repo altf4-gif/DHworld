@@ -1,0 +1,42 @@
+newmtl TankBodygeom1Mtl
+Material Color
+Ka 0.373615 0.368591 0.383775
+Kd 0.373615 0.368591 0.383775
+Ks 0.0234425 0.0231273 0.02408 
+
+d 1
+
+Ns 0
+
+map_Ka TankBodygeom1_diff.png
+map_Kd TankBodygeom1_diff.png
+map_d TankBodygeom1_diff.png
+
+newmtl Turretgeom1Mtl
+Material Color
+Ka 0.373615 0.368591 0.383775
+Kd 0.373615 0.368591 0.383775
+Ks 0.0234425 0.0231273 0.02408 
+
+d 1
+
+Ns 0
+
+map_Ka Turretgeom1_diff.png
+map_Kd Turretgeom1_diff.png
+map_d Turretgeom1_diff.png
+
+newmtl Wheelgeom1Mtl
+Material Color
+Ka 0.373615 0.368591 0.383775
+Kd 0.373615 0.368591 0.383775
+Ks 0.0234425 0.0231273 0.02408 
+
+d 1
+
+Ns 0
+
+map_Ka Wheelgeom1_diff.png
+map_Kd Wheelgeom1_diff.png
+map_d Wheelgeom1_diff.png
+

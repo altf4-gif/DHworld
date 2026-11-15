@@ -1,0 +1,46 @@
+newmtl Leaf1Mtl
+Material Color
+Ka 0.373615 0.368591 0.383775
+Kd 0.373615 0.368591 0.383775
+Ke 1 1 1
+Ks 0.0322335 0.0318 0.03311 
+
+d 1
+
+Ns 255
+
+map_Ka Leaf1_diff.png
+map_Kd Leaf1_diff.png
+map_d Leaf1_diff.png
+
+map_Bump Leaf1_nmap.png
+
+map_Ns Leaf1_spec.png
+
+map_Ke Leaf1_emap.png
+
+rbx_alphamode transparent
+
+newmtl Trunk1Mtl
+Material Color
+Ka 0.940601 0.940601 0.940601
+Kd 0.940601 0.940601 0.940601
+Ke 1 1 1
+Ks 0.0811499 0.0811499 0.0811499 
+
+d 1
+
+Ns 255
+
+map_Ka Trunk1_diff.png
+map_Kd Trunk1_diff.png
+map_d Trunk1_diff.png
+
+map_Bump Trunk1_nmap.png
+
+map_Ns Trunk1_spec.png
+
+map_Ke Trunk1_emap.png
+
+rbx_alphamode overlay
+
