@@ -1,0 +1,55 @@
+auto_rig=1
+
+# кисти: 0.38 = середина бедра (меньше = руки длиннее)
+fingertip_y=0.38
+arm_stretch=0
+
+# ОТСТУП РУК ОТ ТЕЛА (доля ширины модели).
+# -1 = авто: меряем ширину бёдер на уровне кистей и отодвигаем ровно чтобы не лезло.
+# у качка/толстяка авто даст 0 — их не тронет.
+arm_out=-1
+arm_out_margin=0.012
+arm_out_max=0.08
+
+# ручные оверрайды по подстроке имени файла (если авто не устроил):
+# out_meshy=0.030
+# out_womento=0.030
+# out_kachok=0
+# out_tolstiy=0
+# out_pups=0.02
+# out_police=0.02
+# out_com=0.02
+# out_berem=0.03
+# out_ca=0.02
+
+# МЯГКОСТЬ ШВОВ — это то, что убирает пробелы при движении.
+# больше = плавнее сгиб, но размытее сустав. 0.02..0.05 — рабочий диапазон.
+blend_x=0.030
+blend_y=0.030
+
+# авто-детект
+arm_band_ratio=0.55
+arm_margin=1.02
+arm_band_pad=0.02
+leg_gap=0.015
+
+# fallback
+neck_y=0.85
+hip_y=0.45
+shoulder_y=0.80
+arm_x=0.13
+pelvis_margin=0.08
+
+# анимация
+leg_swing=0.45
+arm_swing=0.28
+bob=0.018
+stride=0.45
+walk_speed=1.5
+lean=0.06
+sway=0.02
+turn_rate=4.0
+idle_min=1.0
+idle_max=3.5
+step_sound=1
+facing_offset=0
